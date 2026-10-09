@@ -25,11 +25,15 @@ if (localPropertiesFile.exists()) {
 }
 val googleBooksApiKey = localProperties.getProperty("GOOGLE_BOOKS_API_KEY") ?: ""
 val firebaseApiKey = localProperties.getProperty("FIREBASE_API_KEY") ?: googleBooksApiKey
+val firebaseAppId = localProperties.getProperty("FIREBASE_APP_ID") ?: ""
 
 @CacheableTask
 abstract class InjectApiKeyTask : DefaultTask() {
     @get:Input
     abstract val apiKey: Property<String>
+
+    @get:Input
+    abstract val appId: Property<String>
 
     @get:InputFile
     @get:Optional
@@ -42,6 +46,7 @@ abstract class InjectApiKeyTask : DefaultTask() {
     @TaskAction
     fun inject() {
         val key = apiKey.get()
+        val idVal = appId.get()
         val srcFile = sourceGoogleServicesFile.orNull?.asFile
         val outFile = outputGoogleServicesFile.get().asFile
 
@@ -58,7 +63,7 @@ abstract class InjectApiKeyTask : DefaultTask() {
               "client": [
                 {
                   "client_info": {
-                    "mobilesdk_app_id": "1:710086510903:android:623f5f23a458585d6df2b2",
+                    "mobilesdk_app_id": "FIREBASE_APP_ID",
                     "android_client_info": {
                       "package_name": "com.example.librarybook"
                     }
@@ -85,6 +90,9 @@ abstract class InjectApiKeyTask : DefaultTask() {
         if (key.isNotEmpty()) {
             updatedContent = updatedContent.replace("FIREBASE_API_KEY", key)
         }
+        if (idVal.isNotEmpty()) {
+            updatedContent = updatedContent.replace("FIREBASE_APP_ID", idVal)
+        }
         outFile.parentFile.mkdirs()
         outFile.writeText(updatedContent)
     }
@@ -92,6 +100,7 @@ abstract class InjectApiKeyTask : DefaultTask() {
 
 val injectApiKeyTask = tasks.register<InjectApiKeyTask>("injectFirebaseApiKey") {
     apiKey.set(firebaseApiKey)
+    appId.set(firebaseAppId)
     sourceGoogleServicesFile.set(layout.projectDirectory.file("google-services.json"))
     outputGoogleServicesFile.set(layout.projectDirectory.file("src/debug/google-services.json"))
 }

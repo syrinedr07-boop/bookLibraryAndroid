@@ -29,10 +29,12 @@ jobs:
         env:
           GOOGLE_BOOKS_API_KEY: ${{ secrets.GOOGLE_BOOKS_API_KEY }}
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "GOOGLE_BOOKS_API_KEY=$GOOGLE_BOOKS_API_KEY" >> local.properties
           echo "FIREBASE_API_KEY=$FIREBASE_API_KEY" >> local.properties
+          echo "FIREBASE_APP_ID=$FIREBASE_APP_ID" >> local.properties
 
       - name: Run Unit Tests
         run: ./gradlew testDebugUnitTest --stacktrace
