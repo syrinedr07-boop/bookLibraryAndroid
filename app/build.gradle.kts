@@ -1,11 +1,15 @@
 import java.util.Properties
 import org.gradle.api.DefaultTask
+import org.gradle.api.Task
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 
 plugins {
@@ -22,12 +26,14 @@ if (localPropertiesFile.exists()) {
 val googleBooksApiKey = localProperties.getProperty("GOOGLE_BOOKS_API_KEY") ?: ""
 val firebaseApiKey = localProperties.getProperty("FIREBASE_API_KEY") ?: googleBooksApiKey
 
+@CacheableTask
 abstract class InjectApiKeyTask : DefaultTask() {
     @get:Input
     abstract val apiKey: Property<String>
 
     @get:InputFile
     @get:Optional
+    @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val sourceGoogleServicesFile: RegularFileProperty
 
     @get:OutputFile
