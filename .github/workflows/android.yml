@@ -1,4 +1,4 @@
-name: Android CI Workflow
+name: Android CI/CD Workflow
 
 on:
   push:
@@ -24,11 +24,14 @@ jobs:
       - name: Grant Execute Permission for Gradlew
         run: chmod +x gradlew
 
-      - name: Setup Dummy Local Properties & Google Services for CI
+      - name: Setup Local Properties with GitHub Secrets
+        env:
+          GOOGLE_BOOKS_API_KEY: ${{ secrets.GOOGLE_BOOKS_API_KEY }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          echo "GOOGLE_BOOKS_API_KEY=${{ secrets.GOOGLE_BOOKS_API_KEY || 'AIzaSyDN2zBJXuG6DLZvQRktyqbt3eguOoi6K-E' }}" >> local.properties
-          echo "FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY || 'AIzaSyDN2zBJXuG6DLZvQRktyqbt3eguOoi6K-E' }}" >> local.properties
+          echo "GOOGLE_BOOKS_API_KEY=$GOOGLE_BOOKS_API_KEY" >> local.properties
+          echo "FIREBASE_API_KEY=$FIREBASE_API_KEY" >> local.properties
 
       - name: Run Unit Tests
         run: ./gradlew testDebugUnitTest --stacktrace
