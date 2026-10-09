@@ -4,6 +4,7 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 
@@ -19,13 +20,14 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 val googleBooksApiKey = localProperties.getProperty("GOOGLE_BOOKS_API_KEY") ?: ""
-val firebaseApiKey = localProperties.getProperty("FIREBASE_API_KEY") ?: ""
+val firebaseApiKey = localProperties.getProperty("FIREBASE_API_KEY") ?: googleBooksApiKey
 
 abstract class InjectApiKeyTask : DefaultTask() {
     @get:Input
     abstract val apiKey: Property<String>
 
     @get:InputFile
+    @get:Optional
     abstract val sourceGoogleServicesFile: RegularFileProperty
 
     @get:OutputFile
@@ -34,17 +36,51 @@ abstract class InjectApiKeyTask : DefaultTask() {
     @TaskAction
     fun inject() {
         val key = apiKey.get()
-        val srcFile = sourceGoogleServicesFile.get().asFile
+        val srcFile = sourceGoogleServicesFile.orNull?.asFile
         val outFile = outputGoogleServicesFile.get().asFile
 
-        if (srcFile.exists()) {
-            var content = srcFile.readText()
-            if (key.isNotEmpty()) {
-                content = content.replace("FIREBASE_API_KEY", key)
+        val baseContent = if (srcFile != null && srcFile.exists()) {
+            srcFile.readText()
+        } else {
+            """
+            {
+              "project_info": {
+                "project_number": "710086510903",
+                "project_id": "book-library-780b8",
+                "storage_bucket": "book-library-780b8.firebasestorage.app"
+              },
+              "client": [
+                {
+                  "client_info": {
+                    "mobilesdk_app_id": "1:710086510903:android:623f5f23a458585d6df2b2",
+                    "android_client_info": {
+                      "package_name": "com.example.librarybook"
+                    }
+                  },
+                  "oauth_client": [],
+                  "api_key": [
+                    {
+                      "current_key": "FIREBASE_API_KEY"
+                    }
+                  ],
+                  "services": {
+                    "appinvite_service": {
+                      "other_platform_oauth_client": []
+                    }
+                  }
+                }
+              ],
+              "configuration_version": "1"
             }
-            outFile.parentFile.mkdirs()
-            outFile.writeText(content)
+            """.trimIndent()
         }
+
+        var updatedContent = baseContent
+        if (key.isNotEmpty()) {
+            updatedContent = updatedContent.replace("FIREBASE_API_KEY", key)
+        }
+        outFile.parentFile.mkdirs()
+        outFile.writeText(updatedContent)
     }
 }
 
