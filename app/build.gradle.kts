@@ -98,6 +98,13 @@ tasks.matching { it.name == "preBuild" }.configureEach {
     dependsOn(injectApiKeyTask)
 }
 
+tasks.matching { it.name.startsWith("test") }.configureEach {
+    dependsOn.removeIf {
+        (it as? Task)?.name == "injectFirebaseApiKey" ||
+        (it as? String) == "injectFirebaseApiKey"
+    }
+}
+
 android {
     namespace = "com.example.librarybook"
     compileSdk {
