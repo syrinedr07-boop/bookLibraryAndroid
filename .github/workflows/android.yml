@@ -8,6 +8,7 @@ on:
 
 jobs:
   build-and-test:
+    name: Build & Test
     runs-on: ubuntu-latest
 
     steps:
@@ -44,3 +45,26 @@ jobs:
         with:
           name: debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+  deploy-firebase:
+    name: Deploy to Firebase App Distribution
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Debug APK Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: debug-apk
+          path: app/build/outputs/apk/debug/
+
+      - name: Distribute APK to Firebase
+        uses: w9jds/firebase-action@v13.4.0
+        with:
+          args: appdistribution:distribute app/build/outputs/apk/debug/app-debug.apk --app 1:710086510903:android:623f5f23a458585d6df2b2 --release-notes "Automated build from CI/CD pipeline"
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
