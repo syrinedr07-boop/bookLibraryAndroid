@@ -28,13 +28,16 @@ jobs:
       - name: Setup Local Properties with GitHub Secrets
         env:
           GOOGLE_BOOKS_API_KEY: ${{ secrets.GOOGLE_BOOKS_API_KEY }}
-          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "GOOGLE_BOOKS_API_KEY=$GOOGLE_BOOKS_API_KEY" >> local.properties
-          echo "FIREBASE_API_KEY=$FIREBASE_API_KEY" >> local.properties
-          echo "FIREBASE_APP_ID=$FIREBASE_APP_ID" >> local.properties
+
+      - name: Decode Google Services JSON
+        env:
+          GOOGLE_SERVICES_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          mkdir -p app/src/debug
+          echo "$GOOGLE_SERVICES_BASE64" | base64 --decode > app/src/debug/google-services.json
 
       - name: Run Unit Tests
         run: ./gradlew testDebugUnitTest --stacktrace
