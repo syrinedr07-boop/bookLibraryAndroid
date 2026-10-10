@@ -1,16 +1,4 @@
 import java.util.Properties
-import org.gradle.api.DefaultTask
-import org.gradle.api.Task
-import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.Property
-import org.gradle.api.tasks.CacheableTask
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
-import org.gradle.api.tasks.TaskAction
 
 plugins {
     alias(libs.plugins.android.application)
@@ -24,101 +12,6 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 val googleBooksApiKey = localProperties.getProperty("GOOGLE_BOOKS_API_KEY") ?: ""
-val firebaseApiKey = localProperties.getProperty("FIREBASE_API_KEY") ?: googleBooksApiKey
-val firebaseAppId = localProperties.getProperty("FIREBASE_APP_ID") ?: ""
-
-@CacheableTask
-abstract class InjectApiKeyTask : DefaultTask() {
-    @get:Input
-    abstract val apiKey: Property<String>
-
-    @get:Input
-    abstract val appId: Property<String>
-
-    @get:InputFile
-    @get:Optional
-    @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val sourceGoogleServicesFile: RegularFileProperty
-
-    @get:OutputFile
-    abstract val outputGoogleServicesFile: RegularFileProperty
-
-    @TaskAction
-    fun inject() {
-        val key = apiKey.get()
-        val idVal = appId.get()
-        val srcFile = sourceGoogleServicesFile.orNull?.asFile
-        val outFile = outputGoogleServicesFile.get().asFile
-
-        val baseContent = if (srcFile != null && srcFile.exists()) {
-            srcFile.readText()
-        } else {
-            """
-            {
-              "project_info": {
-                "project_number": "710086510903",
-                "project_id": "book-library-780b8",
-                "storage_bucket": "book-library-780b8.firebasestorage.app"
-              },
-              "client": [
-                {
-                  "client_info": {
-                    "mobilesdk_app_id": "FIREBASE_APP_ID",
-                    "android_client_info": {
-                      "package_name": "com.example.librarybook"
-                    }
-                  },
-                  "oauth_client": [],
-                  "api_key": [
-                    {
-                      "current_key": "FIREBASE_API_KEY"
-                    }
-                  ],
-                  "services": {
-                    "appinvite_service": {
-                      "other_platform_oauth_client": []
-                    }
-                  }
-                }
-              ],
-              "configuration_version": "1"
-            }
-            """.trimIndent()
-        }
-
-        var updatedContent = baseContent
-        if (key.isNotEmpty()) {
-            updatedContent = updatedContent.replace("FIREBASE_API_KEY", key)
-        }
-        if (idVal.isNotEmpty()) {
-            updatedContent = updatedContent.replace("FIREBASE_APP_ID", idVal)
-        }
-        outFile.parentFile.mkdirs()
-        outFile.writeText(updatedContent)
-    }
-}
-
-val injectApiKeyTask = tasks.register<InjectApiKeyTask>("injectFirebaseApiKey") {
-    apiKey.set(firebaseApiKey)
-    appId.set(firebaseAppId)
-    sourceGoogleServicesFile.set(layout.projectDirectory.file("google-services.json"))
-    outputGoogleServicesFile.set(layout.projectDirectory.file("src/debug/google-services.json"))
-}
-
-tasks.matching { it.name.startsWith("process") && it.name.endsWith("GoogleServices") }.configureEach {
-    dependsOn(injectApiKeyTask)
-}
-
-tasks.matching { it.name == "preBuild" }.configureEach {
-    dependsOn(injectApiKeyTask)
-}
-
-tasks.matching { it.name.startsWith("test") }.configureEach {
-    dependsOn.removeIf {
-        (it as? Task)?.name == "injectFirebaseApiKey" ||
-        (it as? String) == "injectFirebaseApiKey"
-    }
-}
 
 android {
     namespace = "com.example.librarybook"
