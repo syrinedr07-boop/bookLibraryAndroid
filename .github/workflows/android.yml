@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main", "develop" ]
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: [ "main" ]
 
 jobs:
   build-and-test:
@@ -36,20 +36,46 @@ jobs:
         env:
           GOOGLE_SERVICES_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          mkdir -p app/src/debug
+          mkdir -p app/src/debug app/src/preprod
           echo "$GOOGLE_SERVICES_BASE64" | base64 --decode > app/src/debug/google-services.json
+          echo "$GOOGLE_SERVICES_BASE64" | base64 --decode > app/src/preprod/google-services.json
+          echo "$GOOGLE_SERVICES_BASE64" | base64 --decode > app/google-services.json
 
       - name: Run Unit Tests
         run: ./gradlew testDebugUnitTest --stacktrace
 
-      - name: Build Debug/Release APK
-        run: ./gradlew assemblePreprod assembleRelease --stacktrace --info
+      - name: Build Debug APK (on develop push)
+        if: github.ref == 'refs/heads/develop'
+        run: ./gradlew assembleDebug --stacktrace
 
-      - name: Upload APK Artifacts
+      - name: Build Preprod APK (on PR to main)
+        if: github.event_name == 'pull_request'
+        run: ./gradlew assemblePreprod --stacktrace
+
+      - name: Build Release APK (on main push)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Upload Debug APK Artifact
+        if: github.ref == 'refs/heads/develop'
         uses: actions/upload-artifact@v4
         with:
-          name: app-apks
-          path: app/build/outputs/apk/
+          name: test-apk-debug
+          path: app/build/outputs/apk/debug/
+
+      - name: Upload Preprod APK Artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: preprod-apk
+          path: app/build/outputs/apk/preprod/
+
+      - name: Upload Release APK Artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk-prod
+          path: app/build/outputs/apk/release/
 
   deploy-firebase:
     name: Deploy to Firebase App Distribution
@@ -61,11 +87,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Download APK Artifacts
+      - name: Download Release APK Artifact
         uses: actions/download-artifact@v4
         with:
-          name: app-apks
-          path: app/build/outputs/apk/
+          name: release-apk-prod
+          path: app/build/outputs/apk/release/
 
       - name: Upload artifact to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1.7.0
@@ -74,3 +100,4 @@ jobs:
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
           groups: testers
           file: app/build/outputs/apk/release/app-release.apk
+          releaseNotes: "Production Release build from main branch"
