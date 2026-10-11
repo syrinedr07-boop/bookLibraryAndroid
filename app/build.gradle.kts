@@ -32,9 +32,21 @@ android {
     }
 
     buildTypes {
+        debug {
+            versionNameSuffix = "-debug"
+            buildConfigField("String", "ENV_NAME", "\"DEBUG\"")
+        }
+        create("preprod") {
+            initWith(getByName("release"))
+            versionNameSuffix = "-preprod"
+            buildConfigField("String", "ENV_NAME", "\"PREPROD\"")
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            buildConfigField("String", "ENV_NAME", "\"PROD\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
