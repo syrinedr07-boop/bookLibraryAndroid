@@ -3,6 +3,7 @@ package com.example.librarybook.presentation.book
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.librarybook.domain.book.model.Book
+import com.example.librarybook.domain.book.repository.BookRepository
 import com.example.librarybook.domain.book.usecase.GetBookDetailsUseCase
 import com.example.librarybook.domain.book.usecase.SearchBooksUseCase
 import kotlinx.coroutines.Job
@@ -15,7 +16,8 @@ import kotlinx.coroutines.launch
 
 class BookViewModel(
     private val searchBooksUseCase: SearchBooksUseCase,
-    private val getBookDetailsUseCase: GetBookDetailsUseCase
+    private val getBookDetailsUseCase: GetBookDetailsUseCase,
+    private val bookRepository: BookRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BookListUiState())
@@ -25,10 +27,15 @@ class BookViewModel(
 
     init {
         searchBooks(_uiState.value.searchQuery)
+        viewModelScope.launch {
+            bookRepository.favoriteBooks.collect { favs ->
+                _uiState.update { it.copy(favoriteBooks = favs) }
+            }
+        }
     }
 
     fun onSearchQueryChanged(newQuery: String) {
-        _uiState.update { it.copy(searchQuery = newQuery) }
+        _uiState.update { it.copy(searchQuery = newQuery, isShowingFavorites = false) }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             delay(500)
@@ -38,7 +45,7 @@ class BookViewModel(
 
     fun searchBooks(query: String = _uiState.value.searchQuery) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update { it.copy(isLoading = true, errorMessage = null, isShowingFavorites = false) }
             val result = searchBooksUseCase(query)
             result.fold(
                 onSuccess = { books ->
@@ -60,6 +67,16 @@ class BookViewModel(
                 }
             )
         }
+    }
+
+    fun toggleFavorite(book: Book) {
+        viewModelScope.launch {
+            bookRepository.toggleFavorite(book)
+        }
+    }
+
+    fun toggleShowFavorites() {
+        _uiState.update { it.copy(isShowingFavorites = !it.isShowingFavorites) }
     }
 
     fun onBookSelected(book: Book) {

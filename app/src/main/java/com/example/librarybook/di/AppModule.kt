@@ -16,6 +16,7 @@ import com.example.librarybook.presentation.book.BookViewModel
 import com.google.firebase.auth.FirebaseAuth
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import retrofit2.Retrofit
@@ -53,10 +54,10 @@ val authModule = module {
 }
 
 val bookModule = module {
-    single<BookRepository> { BookRepositoryImpl(get()) }
+    single<BookRepository> { BookRepositoryImpl(get(), androidContext()) }
     factory { SearchBooksUseCase(get()) }
     factory { GetBookDetailsUseCase(get()) }
-    viewModel { BookViewModel(get(), get()) }
+    viewModel { BookViewModel(get(), get(), get()) }
 }
 
 val appModules = listOf(networkModule, authModule, bookModule)
