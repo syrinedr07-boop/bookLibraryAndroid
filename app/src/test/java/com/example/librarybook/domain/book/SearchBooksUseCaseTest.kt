@@ -3,6 +3,8 @@ package com.example.librarybook.domain.book
 import com.example.librarybook.domain.book.model.Book
 import com.example.librarybook.domain.book.repository.BookRepository
 import com.example.librarybook.domain.book.usecase.SearchBooksUseCase
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -44,6 +46,10 @@ class SearchBooksUseCaseTest {
         override suspend fun getBookDetails(bookId: String): Result<Book> {
             TODO("Not needed for this test")
         }
+
+        override val favoriteBooks: Flow<List<Book>> = flowOf(emptyList())
+        override suspend fun toggleFavorite(book: Book) {}
+        override suspend fun isFavorite(bookId: String): Boolean = false
     }
 
     private val useCase = SearchBooksUseCase(fakeRepository)
