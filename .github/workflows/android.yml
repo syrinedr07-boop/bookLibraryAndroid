@@ -67,6 +67,9 @@ jobs:
           name: debug-apk
           path: app/build/outputs/apk/debug/
 
+      - name: Verify APK exists
+        run: ls -la app/build/outputs/apk/debug/
+
       - name: Distribute APK to Firebase
         uses: w9jds/firebase-action@v13.4.0
         with:
