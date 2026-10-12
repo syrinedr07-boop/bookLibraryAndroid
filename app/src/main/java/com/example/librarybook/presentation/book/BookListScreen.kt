@@ -38,7 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.librarybook.presentation.book.components.BookDetailDialog
+import com.example.librarybook.domain.book.model.Book
 import com.example.librarybook.presentation.book.components.BookItemCard
 import com.example.librarybook.presentation.book.components.BookSearchBar
 
@@ -46,6 +46,7 @@ import com.example.librarybook.presentation.book.components.BookSearchBar
 @Composable
 fun BookListScreen(
     viewModel: BookViewModel,
+    onBookClick: (Book) -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -187,7 +188,7 @@ fun BookListScreen(
                                 BookItemCard(
                                     book = book,
                                     isFavorite = isFav,
-                                    onClick = { viewModel.onBookSelected(book) },
+                                    onClick = { onBookClick(book) },
                                     onToggleFavorite = { viewModel.toggleFavorite(book) }
                                 )
                             }
@@ -195,16 +196,6 @@ fun BookListScreen(
                     }
                 }
             }
-        }
-
-        uiState.selectedBook?.let { selectedBook ->
-            val isFav = uiState.favoriteBooks.any { it.id == selectedBook.id }
-            BookDetailDialog(
-                book = selectedBook,
-                isFavorite = isFav,
-                onToggleFavorite = { viewModel.toggleFavorite(selectedBook) },
-                onDismiss = viewModel::onDismissBookDetail
-            )
         }
     }
 }

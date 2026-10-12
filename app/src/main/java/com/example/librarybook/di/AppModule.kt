@@ -12,6 +12,7 @@ import com.example.librarybook.domain.book.repository.BookRepository
 import com.example.librarybook.domain.book.usecase.GetBookDetailsUseCase
 import com.example.librarybook.domain.book.usecase.SearchBooksUseCase
 import com.example.librarybook.presentation.auth.AuthViewModel
+import com.example.librarybook.presentation.book.BookDetailViewModel
 import com.example.librarybook.presentation.book.BookViewModel
 import com.google.firebase.auth.FirebaseAuth
 import okhttp3.OkHttpClient
@@ -58,6 +59,7 @@ val bookModule = module {
     factory { SearchBooksUseCase(get()) }
     factory { GetBookDetailsUseCase(get()) }
     viewModel { BookViewModel(get(), get(), get()) }
+    viewModel { (bookId: String) -> BookDetailViewModel(bookId, get()) }
 }
 
 val appModules = listOf(networkModule, authModule, bookModule)

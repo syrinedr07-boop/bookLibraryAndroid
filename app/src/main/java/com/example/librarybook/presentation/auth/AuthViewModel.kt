@@ -1,5 +1,6 @@
 package com.example.librarybook.presentation.auth
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.librarybook.domain.auth.usecase.GetCurrentUserUseCase
@@ -18,6 +19,10 @@ class AuthViewModel(
     private val signOutUseCase: SignOutUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "AuthViewModel"
+    }
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
@@ -70,10 +75,26 @@ class AuthViewModel(
                     }
                 },
                 onFailure = { error ->
+                    val rawMsg = error.message ?: ""
+                    val userFriendlyMessage = when {
+                        rawMsg.contains("no user record", ignoreCase = true) ||
+                        rawMsg.contains("user-not-found", ignoreCase = true) -> "No account found with this email."
+                        
+                        rawMsg.contains("password", ignoreCase = true) && (rawMsg.contains("invalid", ignoreCase = true) || rawMsg.contains("wrong", ignoreCase = true)) -> "Incorrect password. Please try again."
+                        
+                        rawMsg.contains("already in use", ignoreCase = true) ||
+                        rawMsg.contains("email-already-in-use", ignoreCase = true) -> "This email is already registered."
+                        
+                        rawMsg.contains("badly formatted", ignoreCase = true) ||
+                        rawMsg.contains("invalid-email", ignoreCase = true) -> "Please enter a valid email address."
+                        
+                        else -> error.localizedMessage ?: "Authentication failed. Please check your credentials."
+                    }
+                    Log.e(TAG, "Authentication failed: $rawMsg", error)
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = error.localizedMessage ?: "Authentication failed."
+                            errorMessage = userFriendlyMessage
                         )
                     }
                 }
